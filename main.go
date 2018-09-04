@@ -3,20 +3,30 @@ package main
 import (
 	"io/ioutil"
 	"os"
+	"path/filepath"
 
 	iconv "github.com/djimenez/iconv-go"
 )
 
 func main() {
+	outputDir := "tmp"
+	os.Mkdir(outputDir, 0666)
 
+	filepath.Walk("testdata", func(path string, info os.FileInfo, err error) error {
+		if info.IsDir() {
+			os.Mkdir(filepath.Join(outputDir, path), 0666)
+		} else {
+			saveFileWithEncoding(path, filepath.Join(outputDir, path))
+		}
+		return nil
+	})
 }
 
-func saveFileWithEncoding(file string, outputDir string) error {
+func saveFileWithEncoding(file string, output string) error {
 	content, err := loadFileWithEncoding(file)
 	if err != nil {
 		return err
 	}
-	output := outputDir + file
 	return writeFile(content, output)
 }
 
