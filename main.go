@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -9,14 +10,28 @@ import (
 )
 
 func main() {
-	outputDir := "tmp"
+	inputDir := "input"
+	outputDir := "output"
 	os.Mkdir(outputDir, 0666)
 
-	filepath.Walk("testdata", func(path string, info os.FileInfo, err error) error {
+	filepath.Walk(inputDir, func(path string, info os.FileInfo, err error) error {
 		if info.IsDir() {
-			os.Mkdir(filepath.Join(outputDir, path), 0666)
-		} else {
-			saveFileWithEncoding(path, filepath.Join(outputDir, path))
+			fmt.Printf("handling directory %s\n", path)
+			err := os.Mkdir(filepath.Join(outputDir, path), 0666)
+			if err != nil {
+				fmt.Printf("error while creating directory %s\n", err)
+			}
+		}
+		return nil
+	})
+
+	filepath.Walk(inputDir, func(path string, info os.FileInfo, err error) error {
+		if !info.IsDir() {
+			fmt.Printf("handling file %s\n", path)
+			err := saveFileWithEncoding(path, filepath.Join(outputDir, path))
+			if err != nil {
+				fmt.Printf("error while copying file %s\n", err)
+			}
 		}
 		return nil
 	})
