@@ -9,6 +9,9 @@ import (
 	iconv "github.com/djimenez/iconv-go"
 )
 
+const fromEncoding = "windows-1252"
+const toEncoding = "utf-8"
+
 func main() {
 	inputDir := "input"
 	outputDir := "output"
@@ -28,7 +31,8 @@ func main() {
 	filepath.Walk(inputDir, func(path string, info os.FileInfo, err error) error {
 		if !info.IsDir() {
 			fmt.Printf("handling file %s\n", path)
-			err := saveFileWithEncoding(path, filepath.Join(outputDir, path))
+
+			err := saveFileWithEncoding(path, filepath.Join(outputDir, path), info.Mode())
 			if err != nil {
 				fmt.Printf("error while copying file %s\n", err)
 			}
@@ -37,21 +41,21 @@ func main() {
 	})
 }
 
-func saveFileWithEncoding(file string, output string) error {
-	content, err := loadFileWithEncoding(file)
+func saveFileWithEncoding(file string, output string, mode os.FileMode) error {
+	content, err := loadFileWithEncoding(file, fromEncoding, toEncoding)
 	if err != nil {
 		return err
 	}
-	return writeFile(content, output)
+	return writeFile(content, output, mode)
 }
 
-func loadFileWithEncoding(file string) (string, error) {
+func loadFileWithEncoding(file string, encodingIn string, encodingOut string) (string, error) {
 	in, err := os.Open(file)
 	if err != nil {
 		return "", err
 	}
 	defer in.Close()
-	reader, err := iconv.NewReader(in, "windows-1252", "utf-8")
+	reader, err := iconv.NewReader(in, encodingIn, encodingOut)
 	if err != nil {
 		return "", err
 	}
@@ -59,6 +63,6 @@ func loadFileWithEncoding(file string) (string, error) {
 	return string(s), err
 }
 
-func writeFile(content string, file string) error {
-	return ioutil.WriteFile(file, []byte(content), 0666)
+func writeFile(content string, file string, mode os.FileMode) error {
+	return ioutil.WriteFile(file, []byte(content), mode)
 }
