@@ -15,14 +15,27 @@ const toEncoding = "utf-8"
 func main() {
 	inputDir := "input"
 	outputDir := "output"
-	os.Mkdir(outputDir, 0666)
+
+	input, err := os.Stat(inputDir)
+	if err != nil {
+		fmt.Printf("Could not open directory dir: %s\n", inputDir)
+		return
+	}
+
+	if _, err := os.Stat(outputDir); os.IsNotExist(err) {
+		err = os.Mkdir(outputDir, input.Mode())
+		if err != nil {
+			fmt.Printf("Could not create output directory: %s\n", inputDir)
+			return
+		}
+	}
 
 	filepath.Walk(inputDir, func(path string, info os.FileInfo, err error) error {
 		if info.IsDir() {
 			fmt.Printf("handling directory %s\n", path)
-			err := os.Mkdir(filepath.Join(outputDir, path), 0666)
+			err := os.Mkdir(filepath.Join(outputDir, path), info.Mode())
 			if err != nil {
-				fmt.Printf("error while creating directory %s\n", err)
+				fmt.Printf("error while creating directory: %s\n", err)
 			}
 		}
 		return nil
@@ -31,10 +44,9 @@ func main() {
 	filepath.Walk(inputDir, func(path string, info os.FileInfo, err error) error {
 		if !info.IsDir() {
 			fmt.Printf("handling file %s\n", path)
-
 			err := saveFileWithEncoding(path, filepath.Join(outputDir, path), info.Mode())
 			if err != nil {
-				fmt.Printf("error while copying file %s\n", err)
+				fmt.Printf("error while copying file: %s\n", err)
 			}
 		}
 		return nil
