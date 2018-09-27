@@ -26,3 +26,18 @@ func TestSaveFileWithEncoding(t *testing.T) {
 	result, _ := loadFileWithEncoding("testdata/out-utf8/test.txt", "utf-8", "utf-8")
 	assert.Equal(t, "üä@", result)
 }
+
+func TestCreateDirectoryStructure(t *testing.T) {
+	// arrange
+	os.RemoveAll("testdata/output-directories")
+	// action
+	err := createDirectoryStructure("testdata/input-directories", "testdata/output-directories")
+	// verify
+	assert.NoError(t, err)
+	assert.True(t, isFilePresent("testdata/output-directories/a"))
+	assert.True(t, isFilePresent("testdata/output-directories/a/a1"))
+	assert.True(t, isFilePresent("testdata/output-directories/a/a2"))
+	assert.True(t, isFilePresent("testdata/output-directories/b"))
+	assert.True(t, isFilePresent("testdata/output-directories/c"))
+}
+

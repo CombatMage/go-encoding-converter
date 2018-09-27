@@ -5,6 +5,7 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"strings"
 
 	iconv "github.com/djimenez/iconv-go"
 )
@@ -16,30 +17,7 @@ func main() {
 	inputDir := "input"
 	outputDir := "output"
 
-	input, err := os.Stat(inputDir)
-	if err != nil {
-		fmt.Printf("Could not open directory dir: %s\n", inputDir)
-		return
-	}
-
-	if _, err := os.Stat(outputDir); os.IsNotExist(err) {
-		err = os.Mkdir(outputDir, input.Mode())
-		if err != nil {
-			fmt.Printf("Could not create output directory: %s\n", inputDir)
-			return
-		}
-	}
-
-	filepath.Walk(inputDir, func(path string, info os.FileInfo, err error) error {
-		if info.IsDir() {
-			fmt.Printf("handling directory %s\n", path)
-			err := os.Mkdir(filepath.Join(outputDir, path), info.Mode())
-			if err != nil {
-				fmt.Printf("error while creating directory: %s\n", err)
-			}
-		}
-		return nil
-	})
+	createDirectoryStructure(inputDir, outputDir)
 
 	filepath.Walk(inputDir, func(path string, info os.FileInfo, err error) error {
 		if !info.IsDir() {
@@ -51,6 +29,57 @@ func main() {
 		}
 		return nil
 	})
+}
+
+func createDirectoryStructure(srcDirectory string, dstDirectory string) error {
+	input, err := os.Stat(srcDirectory)
+	if err != nil {
+		fmt.Printf("Could not open directory dir: %s\n", srcDirectory)
+		return err
+	}
+
+	if !isFilePresent(dstDirectory) {
+		err := os.Mkdir(dstDirectory, input.Mode())
+		if err != nil {
+			fmt.Printf("Could not create output directory: %s\n", srcDirectory)
+			return err
+		}
+	}
+
+	srcDirectory = filepath.ToSlash(srcDirectory)
+
+	var errOut error
+	filepath.Walk(srcDirectory, func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			fmt.Printf("error while traversing directory: %s\n", err)
+			errOut = err
+			return err
+		}
+
+		path = filepath.ToSlash(path)
+
+		if path == srcDirectory {
+			return nil
+		}
+
+		if info.IsDir() {
+
+			if strings.HasPrefix(path, srcDirectory) {
+				path = strings.Replace(path, srcDirectory, "", 1)
+			}
+
+			fmt.Printf("handling directory %s\n", path)
+			newDirectory := filepath.Join(dstDirectory, path)
+			err := os.Mkdir(newDirectory, info.Mode())
+			if err != nil {
+				fmt.Printf("error while creating directory: %s\n", err)
+				errOut = err
+				return err
+			}
+		}
+		return nil
+	})
+	return errOut
 }
 
 func saveFileWithEncoding(file string, output string, mode os.FileMode) error {
