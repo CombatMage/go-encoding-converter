@@ -41,3 +41,14 @@ func TestCreateDirectoryStructure(t *testing.T) {
 	assert.True(t, isFilePresent("testdata/output-directories/c"))
 }
 
+func TestCopyFilesToDestination(t *testing.T) {
+	// arrange
+	os.RemoveAll("testdata/output-directories")
+	createDirectoryStructure("testdata/input-directories", "testdata/output-directories")
+	// action
+	err := copyFilesToDestination("testdata/input-directories", "testdata/output-directories")
+	// verify
+	assert.NoError(t, err)
+	assert.True(t, isFilePresent("testdata/output-directories/b/b.txt"))
+	assert.True(t, isFilePresent("testdata/output-directories/c/c.txt"))
+}

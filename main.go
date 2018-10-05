@@ -18,17 +18,7 @@ func main() {
 	outputDir := "output"
 
 	createDirectoryStructure(inputDir, outputDir)
-
-	filepath.Walk(inputDir, func(path string, info os.FileInfo, err error) error {
-		if !info.IsDir() {
-			fmt.Printf("handling file %s\n", path)
-			err := saveFileWithEncoding(path, filepath.Join(outputDir, path), info.Mode())
-			if err != nil {
-				fmt.Printf("error while copying file: %s\n", err)
-			}
-		}
-		return nil
-	})
+	copyFilesToDestination(inputDir, outputDir)
 }
 
 func createDirectoryStructure(srcDirectory string, dstDirectory string) error {
@@ -46,9 +36,8 @@ func createDirectoryStructure(srcDirectory string, dstDirectory string) error {
 		}
 	}
 
-	srcDirectory = filepath.ToSlash(srcDirectory)
-
 	var errOut error
+	srcDirectory = filepath.ToSlash(srcDirectory)
 	filepath.Walk(srcDirectory, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
 			fmt.Printf("error while traversing directory: %s\n", err)
@@ -73,6 +62,42 @@ func createDirectoryStructure(srcDirectory string, dstDirectory string) error {
 			err := os.Mkdir(newDirectory, info.Mode())
 			if err != nil {
 				fmt.Printf("error while creating directory: %s\n", err)
+				errOut = err
+				return err
+			}
+		}
+		return nil
+	})
+	return errOut
+}
+
+func copyFilesToDestination(srcDirectory string, dstDirectory string) error {
+
+	var errOut error
+	srcDirectory = filepath.ToSlash(srcDirectory)
+	filepath.Walk(srcDirectory, func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			fmt.Printf("error while traversing directory: %s\n", err)
+			errOut = err
+			return err
+		}
+
+		path = filepath.ToSlash(path)
+
+		if path == srcDirectory {
+			return nil
+		}
+
+		if !info.IsDir() {
+			if strings.HasPrefix(path, srcDirectory) {
+				path = strings.Replace(path, srcDirectory, "", 1)
+			}
+
+			fmt.Printf("handling file %s\n", path)
+			newFile := filepath.Join(dstDirectory, path)
+			err := saveFileWithEncoding(path, newFile, info.Mode())
+			if err != nil {
+				fmt.Printf("error while copying file: %s\n", err)
 				errOut = err
 				return err
 			}
